@@ -1,0 +1,36 @@
+# dependencies
+/node_modules
+
+# next
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# static-export 빌드 중 임시로 옮겨지는 app/api (build-static.mjs 가 try/finally 로 복원)
+/.api-disabled-during-static-build/
+
+# env
+.env*.local
+
+# experiment logs (keep directory, ignore generated json)
+/logs/*
+!/logs/.gitkeep
+
+# analysis outputs (generated from logs; do not commit)
+/analysis/out/
+
+# experiment data — analysis input (do not commit data, keep dir structure via .gitkeep)
+/analysis/input/**/*.csv
+/analysis/input/**/*.json
+
+# python cache (generated when running analysis scripts)
+__pycache__/
+*.pyc
+
+# playwright
+/test-results/
+/playwright-report/
+
+# os
+.DS_Store

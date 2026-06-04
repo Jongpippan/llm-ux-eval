@@ -1,0 +1,237 @@
+:root {
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --border: #e2e5ea;
+  --text: #1c1f23;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --accent-weak: #e8efff;
+  --good: #16a34a;
+  --danger: #dc2626;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo",
+    "Noto Sans KR", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.app-shell {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+
+h1 { font-size: 24px; margin: 0 0 8px; }
+h2 { font-size: 19px; margin: 0 0 8px; }
+p { margin: 0 0 10px; }
+
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn:hover { border-color: var(--accent); }
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover { background: #1d4ed8; }
+.btn-danger { color: var(--danger); border-color: #f3c4c4; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.attr-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 2px 0;
+  color: var(--muted);
+}
+.attr-row b { color: var(--text); font-weight: 600; }
+
+.condition-box {
+  background: var(--accent-weak);
+  border: 1px solid #cfe0ff;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+
+.banner {
+  background: #e9f9ee;
+  border: 1px solid #b9ecc6;
+  color: var(--good);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  margin: 12px 0;
+}
+
+table.compare {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  /* 후보 열 너비를 내용과 무관하게 균등 분배 */
+  table-layout: fixed;
+}
+table.compare th, table.compare td {
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 13px;
+}
+table.compare th { background: #f0f2f5; }
+/* 속성별 우열 강조: 가장 우수한 값 셀 (B 비교 지원 = 값 병치 + 차이 단서) */
+table.compare td.best { background: #e6f4ea; font-weight: 600; }
+.ct-best-mark { color: #137333; margin-left: 4px; font-size: 11px; vertical-align: middle; }
+.compare-legend { color: var(--muted); font-size: 12px; margin: 0 0 8px; line-height: 1.5; }
+.condition-tradeoffs { margin: 0; padding-left: 20px; line-height: 1.7; }
+.compare-panel-foot { padding: 12px 16px; border-top: 1px solid var(--border); }
+.compare-panel-foot .btn { width: 100%; justify-content: center; }
+
+.likert {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 6px 0 16px;
+}
+.likert label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+}
+
+.stack { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.spacer { flex: 1; }
+
+/* 후보 예시 이미지(썸네일) */
+.thumb { width: 100%; border-radius: 8px; overflow: hidden; display: block; }
+.thumb svg { display: block; width: 100%; height: 100%; }
+.thumb-card { height: 84px; margin-bottom: 10px; }
+.thumb-detail { height: 120px; margin: 10px 0 4px; }
+.thumb-mini { width: 40px; height: 28px; border-radius: 6px; flex: 0 0 auto; }
+
+/* 카드 제목(이름) — 항상 2줄 영역으로 고정, 긴 이름도 안전하게 줄바꿈 */
+.card-head { margin-bottom: 2px; }
+.card-name {
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.5em;
+}
+.card-brand { margin-top: 0; }
+
+/* B: 우측 고정 비교 영역 (항상 표시) */
+/* B: 본문은 좌측 절반(50vw)을 차지, 우측 절반은 비교 패널 */
+body.has-compare-panel .app-shell {
+  max-width: none;
+  width: 50vw;
+  margin: 0;
+  margin-left: 0;
+}
+.compare-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 50vw;
+  min-width: 360px;
+  max-width: 50vw;
+  background: var(--card);
+  border-left: 1px solid var(--border);
+  box-shadow: -6px 0 24px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  z-index: 40;
+}
+.compare-panel-head {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.compare-panel-body { padding: 14px 16px; overflow: auto; flex: 1; }
+.compare-empty { color: var(--muted); font-size: 13px; line-height: 1.7; }
+
+.ct-col-head { display: flex; flex-direction: column; gap: 5px; align-items: stretch; }
+.ct-col-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.ct-name { font-weight: 600; overflow-wrap: break-word; white-space: normal; line-height: 1.25; }
+.ct-select { margin-top: 8px; width: 100%; justify-content: center; white-space: nowrap; }
+
+/* table-layout:fixed — 첫 열(속성 라벨)만 고정폭, 후보 열은 모두 동일 너비로 균등 분배.
+   글자가 길면 줄바꿈되도록 처리(세로 쪼개짐 방지). */
+table.compare th, table.compare td { vertical-align: top; overflow-wrap: break-word; word-break: break-word; }
+table.compare thead th:first-child, table.compare tbody th { width: 84px; }
+
+/* 후보 상세 팝오버(비-모달, 좌측 고정) */
+.detail-popover {
+  position: fixed;
+  left: 20px;
+  top: 20px;
+  width: 320px;
+  max-width: calc(100vw - 40px);
+  max-height: 90vh;
+  overflow: auto;
+  z-index: 50;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.16);
+}
+
+@media (max-width: 900px) {
+  /* 좁은 화면: 패널을 하단 고정 시트로 전환, 본문은 전체 너비 사용 */
+  body.has-compare-panel .app-shell { width: auto; margin: 0 auto; }
+  .compare-panel {
+    top: auto;
+    left: 0;
+    width: 100vw;
+    min-width: 0;
+    max-width: 100vw;
+    height: 46vh;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.10);
+  }
+  body.has-compare-panel .app-shell { padding-bottom: 50vh; }
+}

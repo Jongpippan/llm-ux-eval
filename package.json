@@ -1,0 +1,30 @@
+{
+  "name": "comparison-ui-experiment",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Experiment environment for LLM-based user simulation on comparison-support UI (graduation thesis). Dummy data only; no real/fake experiment results.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build:static": "node scripts/build-static.mjs",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "sim:mock": "tsx simulation/run.ts",
+    "sim:llm": "tsx simulation/run.ts"
+  },
+  "dependencies": {
+    "next": "14.2.15",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.48.2",
+    "@types/node": "20.14.0",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "tsx": "4.19.1",
+    "typescript": "5.4.5"
+  }
+}

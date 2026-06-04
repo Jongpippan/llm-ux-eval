@@ -1,0 +1,31 @@
+{
+  "_note": "SYNTHETIC / DUMMY DATA FOR UI TESTING ONLY. All brand and product names are fictional. Not real products. Used only to populate the experiment UI; this file contains no experiment results.",
+  "category": "wireless_earbuds",
+  "currency": "KRW",
+  "attribute_labels": {
+    "price": "가격(원)",
+    "rating": "평점",
+    "battery_hours": "재생시간(시간)",
+    "weight_g": "무게(g)",
+    "noise_cancel": "노이즈 캔슬링",
+    "water_resistant": "생활방수",
+    "warranty_months": "보증(개월)",
+    "codec": "코덱"
+  },
+  "candidates": [
+    { "id": "c01", "name": "Aurio Pulse Mini", "brand": "Aurio", "price": 89000, "rating": 4.1, "battery_hours": 6, "weight_g": 5.1, "noise_cancel": false, "water_resistant": true, "warranty_months": 12, "codec": "AAC" },
+    { "id": "c02", "name": "Aurio Pulse Pro", "brand": "Aurio", "price": 159000, "rating": 4.6, "battery_hours": 8, "weight_g": 5.6, "noise_cancel": true, "water_resistant": true, "warranty_months": 24, "codec": "LDAC" },
+    { "id": "c03", "name": "Nimbus Air 2", "brand": "Nimbus", "price": 119000, "rating": 4.3, "battery_hours": 7, "weight_g": 4.8, "noise_cancel": true, "water_resistant": false, "warranty_months": 12, "codec": "AAC" },
+    { "id": "c04", "name": "Nimbus Air 2 Plus", "brand": "Nimbus", "price": 142000, "rating": 4.5, "battery_hours": 9, "weight_g": 5.0, "noise_cancel": true, "water_resistant": true, "warranty_months": 18, "codec": "aptX" },
+    { "id": "c05", "name": "Volta Beat S", "brand": "Volta", "price": 69000, "rating": 3.8, "battery_hours": 5, "weight_g": 6.2, "noise_cancel": false, "water_resistant": false, "warranty_months": 6, "codec": "SBC" },
+    { "id": "c06", "name": "Volta Beat X", "brand": "Volta", "price": 134000, "rating": 4.2, "battery_hours": 10, "weight_g": 5.9, "noise_cancel": true, "water_resistant": true, "warranty_months": 12, "codec": "AAC" },
+    { "id": "c07", "name": "Lumen Quiet C", "brand": "Lumen", "price": 148000, "rating": 4.7, "battery_hours": 12, "weight_g": 5.3, "noise_cancel": true, "water_resistant": true, "warranty_months": 24, "codec": "LDAC" },
+    { "id": "c08", "name": "Lumen Lite", "brand": "Lumen", "price": 79000, "rating": 4.0, "battery_hours": 6, "weight_g": 4.5, "noise_cancel": false, "water_resistant": true, "warranty_months": 12, "codec": "AAC" },
+    { "id": "c09", "name": "Drift One", "brand": "Drift", "price": 99000, "rating": 3.9, "battery_hours": 7, "weight_g": 5.7, "noise_cancel": false, "water_resistant": false, "warranty_months": 6, "codec": "SBC" },
+    { "id": "c10", "name": "Drift One ANC", "brand": "Drift", "price": 138000, "rating": 4.4, "battery_hours": 9, "weight_g": 5.8, "noise_cancel": true, "water_resistant": true, "warranty_months": 12, "codec": "aptX" },
+    { "id": "c11", "name": "Cresco Bud 3", "brand": "Cresco", "price": 112000, "rating": 4.2, "battery_hours": 8, "weight_g": 5.0, "noise_cancel": true, "water_resistant": false, "warranty_months": 12, "codec": "AAC" },
+    { "id": "c12", "name": "Cresco Bud 3 Max", "brand": "Cresco", "price": 125000, "rating": 4.5, "battery_hours": 11, "weight_g": 6.0, "noise_cancel": true, "water_resistant": true, "warranty_months": 18, "codec": "LDAC" },
+    { "id": "c13", "name": "Halo Sound E", "brand": "Halo", "price": 129000, "rating": 4.3, "battery_hours": 7, "weight_g": 4.6, "noise_cancel": true, "water_resistant": true, "warranty_months": 12, "codec": "aptX" },
+    { "id": "c14", "name": "Halo Sound E Pro", "brand": "Halo", "price": 175000, "rating": 4.8, "battery_hours": 10, "weight_g": 5.4, "noise_cancel": true, "water_resistant": true, "warranty_months": 24, "codec": "LDAC" }
+  ]
+}

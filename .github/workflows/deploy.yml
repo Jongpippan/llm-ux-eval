@@ -1,0 +1,49 @@
+name: Deploy to GitHub Pages
+
+# main 에 push 하면 정적 export 를 빌드해 GitHub Pages 로 배포한다.
+# 서버(API route)는 정적 빌드에서 제외되며(build-static.mjs), human 참가자는 완료화면에서
+# export_*.json 을 받아 실험자에게 제출한다(서버 자동수집 없음).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build static export
+        env:
+          # project site(서브경로 https://<user>.github.io/<repo>/) 배포면 `/<repo>` 로.
+          # user/org page 또는 커스텀 도메인이면 빈 값으로 두세요.
+          NEXT_PUBLIC_BASE_PATH: ${{ vars.PAGES_BASE_PATH }}
+        run: npm run build:static
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

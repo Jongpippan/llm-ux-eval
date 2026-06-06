@@ -21,12 +21,12 @@ python3 analysis/aggregate_events.py
 | 파일 | 내용 |
 |------|------|
 | `sessions_long.csv` | 세션 1건 = 1행 (원자료) |
-| `sessions_grouped.csv` | `(ui_variant, participant_type)` 그룹별 기초 집계: 세션 수, 평균 수행시간, 평균 난이도/만족도/확신도, 평균 이벤트 수, 최종 선택 후보 분포 |
+| `sessions_grouped.csv` | `(ui_variant, participant_type, agent_arch)` 그룹별 기초 집계: 세션 수, 평균 수행시간, 평균 난이도/만족도/확신도, 평균 이벤트 수, 최종 선택 후보 분포. `agent_arch` 로 LLM 의 generic baseline ↔ uxagent 분리(human 은 공란) |
 | `events_long.csv` | 모든 세션 event 합본 (고정 컬럼) |
 | `events_by_type.csv` | `(ui_variant, participant_type, event_type)` 별 발생 수·세션 수 |
 
 ## 그룹핑 키
-A/B 비교는 `ui_variant`(A/B), human↔LLM 비교는 `participant_type`(human/llm) 컬럼으로 묶는다.
+A/B 비교는 `ui_variant`(A/B), human↔LLM 비교는 `participant_type`(human/llm), LLM 의 generic baseline↔uxagent 비교는 `agent_arch` 컬럼으로 묶는다.
 
 ## 주의
 - `analysis/out/` 의 산출물은 입력 로그에 전적으로 의존한다. **mock 테스트 로그와 실제 실험 로그를 섞지 말 것.**

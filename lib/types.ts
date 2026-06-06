@@ -135,6 +135,10 @@ export interface LlmRunMeta {
   used_mock_fallback: boolean | null;
   is_clean_llm_run: boolean | null;
   fallback_reason: string | null;
+  /** agent 아키텍처: "generic"(상태→action 단일 호출 baseline) | "uxagent"(persona+memory+interview). */
+  agent_arch?: string | null;
+  /** uxagent run 에서 사용한 persona id (simulation/personas/). generic/human/mock 엔 null. */
+  persona_id?: string | null;
 }
 
 export interface SessionResult {
@@ -150,4 +154,6 @@ export interface SessionResult {
   used_mock_fallback?: boolean | null;
   is_clean_llm_run?: boolean | null;
   fallback_reason?: string | null;
+  agent_arch?: string | null;
+  persona_id?: string | null;
 }

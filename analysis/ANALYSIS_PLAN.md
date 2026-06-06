@@ -6,7 +6,7 @@
 ## 1. 목적
 
 - `aggregate_sessions.py` / `aggregate_events.py` 가 pilot 입력을 **에러 없이 집계**하는지 확인한다.
-- 그룹핑 키(`ui_variant`, `participant_type`)가 의도대로 묶이는지 확인한다.
+- 그룹핑 키(`ui_variant`, `participant_type`, `agent_arch`)가 의도대로 묶이는지 확인한다(LLM 은 `agent_arch` 로 generic baseline ↔ uxagent 분리).
 - 본실험 데이터 수집 전, 데이터 없음·mock·pilot·real 분리 동작을 검증한다.
 - 어디까지나 **파이프라인 점검**이며, pilot 수치로 실험 결론을 내리지 않는다.
 
@@ -39,13 +39,13 @@ ANALYSIS_SCOPE=all   python3 analysis/aggregate_sessions.py   # main+pilot
 | 파일 | 내용 |
 |---|---|
 | `sessions_long.csv` | 세션 1건 = 1행 (원자료) |
-| `sessions_grouped.csv` | `(ui_variant, participant_type)` 별 session_count, **mean_task_duration_to_final_ms**(분석 canonical), mean_task_duration_ms(참고), mean_survey_difficulty/satisfaction/confidence, mean_event_count, final_choice_distribution |
+| `sessions_grouped.csv` | `(ui_variant, participant_type, agent_arch)` 별 session_count, **mean_task_duration_to_final_ms**(분석 canonical), mean_task_duration_ms(참고), mean_survey_difficulty/satisfaction/confidence, mean_event_count, final_choice_distribution. `agent_arch` 로 generic baseline ↔ uxagent 분리(human 은 공란) → Human/generic-LLM/uxagent-LLM 3-way 대조 |
 
 > **수행시간 정의(중요)**: 분석의 과업 수행시간은 **`task_duration_to_final_ms` = 시작(started_at) → 마지막 `select_final`** 이다(설문 제출·finish·다운로드 제외). events 에서 파생 계산한다. 앱 기록 `task_duration_ms`(설문제출/finish 시점)는 원본 대조용으로만 둔다.
 | `events_long.csv` | 전체 event 합본 (고정 컬럼) |
 | `events_by_type.csv` | `(ui_variant, participant_type, event_type)` 별 count, session_count |
 
-`sessions_long.csv` 에는 LLM provenance 컬럼(`llm_provider`, `llm_model`, `llm_temperature`, `used_mock_fallback`, `is_clean_llm_run`, `fallback_reason`)이 포함된다.
+`sessions_long.csv` 에는 LLM provenance 컬럼(`llm_provider`, `llm_model`, `llm_temperature`, `used_mock_fallback`, `is_clean_llm_run`, `fallback_reason`, `agent_arch`, `persona_id`)이 포함된다.
 
 ## 3-1. LLM 데이터 구분 & clean run 필터 (중요)
 

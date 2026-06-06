@@ -63,11 +63,14 @@ SESSION_COLUMNS = [
     "used_mock_fallback",
     "is_clean_llm_run",
     "fallback_reason",
+    "agent_arch",
+    "persona_id",
 ]
 
 GROUP_COLUMNS = [
     "ui_variant",
     "participant_type",
+    "agent_arch",
     "session_count",
     "mean_task_duration_to_final_ms",
     "mean_task_duration_ms",
@@ -113,14 +116,16 @@ def main():
         for s in excluded:
             print(f"    - {s.get('session_id')} (provider={s.get('llm_provider')}, used_mock_fallback={s.get('used_mock_fallback')})")
 
-    # (ui_variant, participant_type) 그룹핑 (clean LLM 만, human/은 그대로)
+    # (ui_variant, participant_type, agent_arch) 그룹핑 (clean LLM 만, human 은 그대로).
+    # agent_arch 로 generic baseline 과 uxagent(persona) 를 분리한다. human 은 빈 문자열.
     groups = {}
     for s in included:
-        key = (s.get("ui_variant", ""), s.get("participant_type", ""))
+        arch = s.get("agent_arch") or ("generic" if s.get("participant_type") == "llm" else "")
+        key = (s.get("ui_variant", ""), s.get("participant_type", ""), arch)
         groups.setdefault(key, []).append(s)
 
     grouped_rows = []
-    for (variant, ptype), rows in sorted(groups.items()):
+    for (variant, ptype, arch), rows in sorted(groups.items()):
         dist = {}
         for r in rows:
             fid = r.get("final_choice_id")
@@ -131,6 +136,7 @@ def main():
             {
                 "ui_variant": variant,
                 "participant_type": ptype,
+                "agent_arch": arch,
                 "session_count": len(rows),
                 "mean_task_duration_to_final_ms": mean([r.get("task_duration_to_final_ms") for r in rows]),
                 "mean_task_duration_ms": mean([r.get("task_duration_ms") for r in rows]),

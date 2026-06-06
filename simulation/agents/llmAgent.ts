@@ -2,87 +2,38 @@ import type { LlmAction } from "@/lib/schema/llmAction";
 import { llmActionSchema } from "@/lib/schema/llmAction";
 import type { ScreenState } from "@/simulation/stateExtractor";
 import type { SimConfig } from "@/simulation/config";
+import { LlmClient, withRetry, extractJson } from "@/simulation/llm/client";
 
 /**
- * 실제 LLM agent. provider(anthropic|openai-compatible)로 매 step action JSON 을 받는다.
+ * generic LLM agent (AGENT_ARCH=generic). 매 step 상태 JSON 을 보고 action JSON 1개를 받는다.
  *
- * 중요(clean run 정책): 이 agent 는 **mock 으로 자동 fallback 하지 않는다.**
- * 429/오류/스키마 위반 시 retry/backoff 후에도 실패하면 throw 한다.
- * mock 대체 여부는 run loop(run.ts)가 LLM_ALLOW_MOCK_FALLBACK 정책에 따라 결정하고,
- * 그 경우 세션을 used_mock_fallback=true / is_clean_llm_run=false 로 표시한다.
+ * 이 경로는 UXAgent 식 PersonaAgent 도입 이후에도 **baseline 으로 보존**된다(persona/memory 없음).
+ * clean run 정책: mock 자동 fallback 안 함 — 재시도 후에도 실패하면 throw, run.ts 가 정책 결정.
  */
-
-/** 429 rate-limit 전용 에러. retryAfterMs 가 있으면 backoff 에 사용. */
-class RateLimitError extends Error {
-  retryAfterMs?: number;
-  constructor(message: string, retryAfterMs?: number) {
-    super(message);
-    this.name = "RateLimitError";
-    this.retryAfterMs = retryAfterMs;
-  }
-}
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/** Retry-After 헤더(초) 또는 본문 "try again in Xs" 에서 대기 ms 를 추출. */
-function parseRetryAfterMs(headerVal: string | null, body: string): number | undefined {
-  if (headerVal) {
-    const secs = Number(headerVal);
-    if (Number.isFinite(secs)) return Math.ceil(secs * 1000);
-  }
-  const m = body.match(/try again in\s+([\d.]+)\s*s/i);
-  if (m) return Math.ceil(parseFloat(m[1]) * 1000);
-  return undefined;
-}
-
 export class LlmAgent {
   private config: SimConfig;
-  private provider: SimConfig["provider"];
+  private client: LlmClient;
 
   constructor(config: SimConfig) {
     this.config = config;
-    this.provider = config.provider;
+    this.client = new LlmClient(config);
   }
 
   /** 사용 중인 모델명(로깅/provenance 용). 키 값은 포함하지 않는다. */
   modelName(): string {
-    if (this.provider === "anthropic")
-      return process.env.ANTHROPIC_MODEL ?? "claude-3-5-sonnet-latest";
-    if (this.provider === "openai")
-      return process.env.OPENAI_MODEL ?? "gpt-4o-mini";
-    return "unknown";
+    return this.client.modelName();
   }
 
-  /**
-   * 다음 action 을 결정한다. 실패 시 retry/backoff 후에도 안 되면 throw (mock fallback 안 함).
-   * - 429: retry-after(or 본문 Xs) 만큼 대기 후 재시도
-   * - 그 외 오류/스키마 위반: 지수 backoff(retryBaseMs * 2^attempt) 후 재시도
-   */
+  /** 다음 action 을 결정. 429/오류/스키마위반 시 재시도, 그래도 실패하면 throw(mock fallback 안 함). */
   async decide(state: ScreenState): Promise<LlmAction> {
     const prompt = this.buildPrompt(state);
-    const maxRetries = Math.max(0, this.config.maxRetries);
-    let lastErr: unknown;
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        const raw = await this.callProvider(prompt);
-        const json = this.extractJson(raw);
-        return llmActionSchema.parse(json);
-      } catch (err) {
-        lastErr = err;
-        if (attempt >= maxRetries) break;
-        const waitMs =
-          err instanceof RateLimitError && err.retryAfterMs
-            ? err.retryAfterMs
-            : this.config.retryBaseMs * Math.pow(2, attempt);
-        const kind = err instanceof RateLimitError ? "429 rate-limit" : "error";
-        console.warn(
-          `[llmAgent] attempt ${attempt + 1}/${maxRetries + 1} ${kind}; retry in ${waitMs}ms: ${String(err).slice(0, 160)}`
-        );
-        await sleep(waitMs);
-      }
-    }
-    throw new Error(
-      `LLM decide failed after ${maxRetries + 1} attempt(s): ${String(lastErr).slice(0, 200)}`
+    return withRetry(
+      async () => {
+        const raw = await this.client.rawComplete(prompt, { maxTokens: 256 });
+        return llmActionSchema.parse(extractJson(raw));
+      },
+      this.config,
+      "llmAgent"
     );
   }
 
@@ -102,13 +53,17 @@ export class LlmAgent {
       '- {"type":"finish"}',
       "RULES:",
       "- `target_id` is REQUIRED for click/compare_add/compare_remove/select_final and MUST be exactly one of the candidate ids listed below. Do not invent fields or ids.",
-      "- Every card already shows ALL attribute values; you do not need to open any detail. Do NOT keep clicking the same candidate repeatedly; once you have inspected enough, proceed to select_final, then answer_survey, then finish.",
+      "- Each entry in `candidates` includes its full attributes (price KRW, rating, battery_hours, weight_g, noise_cancel, water_resistant, warranty_months, codec) — the SAME information a participant sees on every card, for ALL candidates at once. Weigh the relevant attributes across ALL candidates per the task conditions (see scenarioText) before deciding. Clicking is optional (it does not reveal new info); do not click the same candidate repeatedly. When you have weighed the options, select_final, then answer_survey, then finish.",
       `- This is UI ${state.variant}. ${
         state.variant === "B"
           ? "You MAY use the comparison feature (compare_add / view_compare) but it is NOT required."
           : "There is NO comparison feature; do NOT attempt compare_add/compare_remove/view_compare."
       }`,
       "- Choose the single next action a thoughtful user would take. Do not force any particular candidate.",
+      "- SURVEY: when step is `survey`, output answer_survey with your genuine post-task self-report, rated from your OWN experience of THIS task/interface. Use the SAME items/scale the human sees (below). Do not output preset/fixed numbers, and do not artificially vary — just report how it actually felt to you:",
+      "    · difficulty (이 과업의 수행 난이도는 어땠나요?) — 1=낮음 … 5=높음",
+      "    · satisfaction (인터페이스 사용 만족도는 어땠나요?) — 1=낮음 … 5=높음",
+      "    · confidence (내 최종 선택에 대한 확신도는 어느 정도인가요?) — 1=낮음 … 5=높음",
       `current_step: ${state.step}`,
       `already_viewed_candidate_ids: ${JSON.stringify(h?.already_viewed_candidate_ids ?? [])}`,
       `recent_actions: ${JSON.stringify(h?.recent_actions ?? [])}`,
@@ -118,70 +73,5 @@ export class LlmAgent {
       "Current state JSON:",
       JSON.stringify(state, null, 2),
     ].join("\n");
-  }
-
-  private extractJson(raw: string): unknown {
-    const match = raw.match(/\{[\s\S]*\}/);
-    return JSON.parse(match ? match[0] : raw);
-  }
-
-  /** 실제 provider 호출. 429 → RateLimitError, 그 외 비정상 → Error. 키 값은 절대 로그/에러에 넣지 않는다. */
-  private async callProvider(prompt: string): Promise<string> {
-    if (this.provider === "anthropic") {
-      const key = process.env.ANTHROPIC_API_KEY;
-      if (!key) throw new Error("no ANTHROPIC_API_KEY");
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": key,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: this.modelName(),
-          max_tokens: 256,
-          temperature: this.config.temperature,
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-      if (!res.ok) await this.throwForStatus(res);
-      const data = (await res.json()) as { content?: Array<{ text?: string }> };
-      return data.content?.[0]?.text ?? "";
-    }
-    if (this.provider === "openai") {
-      const key = process.env.OPENAI_API_KEY;
-      if (!key) throw new Error("no OPENAI_API_KEY");
-      // OpenAI 호환 백엔드(Groq/Ollama/OpenRouter 등)는 OPENAI_BASE_URL 로 엔드포인트를 바꾼다.
-      const baseUrl = (process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/+$/, "");
-      const res = await fetch(`${baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${key}`,
-        },
-        body: JSON.stringify({
-          model: this.modelName(),
-          temperature: this.config.temperature,
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-      if (!res.ok) await this.throwForStatus(res);
-      const data = (await res.json()) as {
-        choices?: Array<{ message?: { content?: string } }>;
-      };
-      return data.choices?.[0]?.message?.content ?? "";
-    }
-    throw new Error("unknown provider");
-  }
-
-  /** 비정상 HTTP 응답을 적절한 에러로 변환. 429 는 retry-after 를 담아 RateLimitError 로. (키 미포함) */
-  private async throwForStatus(res: Response): Promise<never> {
-    const body = await res.text().catch(() => "");
-    const snippet = body.slice(0, 300);
-    if (res.status === 429) {
-      const retryAfterMs = parseRetryAfterMs(res.headers.get("retry-after"), body);
-      throw new RateLimitError(`API 429 rate limit: ${snippet}`, retryAfterMs);
-    }
-    throw new Error(`API ${res.status}: ${snippet}`);
   }
 }

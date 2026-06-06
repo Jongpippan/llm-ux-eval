@@ -1,0 +1,13 @@
+{
+  "id": "p11",
+  "name": "이창수",
+  "age": 45,
+  "gender": "남성",
+  "occupation": "영업직원",
+  "income_level": "high",
+  "tech_savviness": "medium",
+  "patience": "low",
+  "shopping_style": "기본적인 스펙만 확인하고 가격대비 성능을 중시하는 실용주의자",
+  "priorities": "ANC를 최우선으로 하되, 무게와 브랜드 신뢰도도 중요함. 가격은 합리적이어야 함.",
+  "bio": "상품 판매에 능숙하며 다양한 기술 제품을 활용한다."
+}

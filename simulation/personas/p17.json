@@ -1,0 +1,13 @@
+{
+  "id": "p17",
+  "name": "김동해",
+  "age": 36,
+  "gender": "남성",
+  "occupation": "마케팅 대행사 직원",
+  "income_level": "middle",
+  "tech_savviness": "high",
+  "patience": "low",
+  "shopping_style": "기술 스펙을 철저히 검토하고 신속하게 결정하는 고급소비자",
+  "priorities": "ANC 최우선중시. 무게와 브랜드 신뢰도 중요함. 가격은 합리적이어야 함.",
+  "bio": "마케팅 업무 경험을 통한 기술 제품의 선택이 특별히 세심하다."
+}

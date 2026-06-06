@@ -1,0 +1,13 @@
+{
+  "id": "p19",
+  "name": "강진우",
+  "age": 40,
+  "gender": "남성",
+  "occupation": "자영업주 (카페)",
+  "income_level": "middle",
+  "tech_savviness": "low",
+  "patience": "high",
+  "shopping_style": "가격 대비 성능을 중히 여기는 실용적 소비자",
+  "priorities": "ANC 성능 중요. 무게와 배터리 시간은 덜 중시됨.",
+  "bio": "카페의 운영을 위해 다양한 기술 제품을 활용한다."
+}

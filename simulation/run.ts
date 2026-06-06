@@ -1,10 +1,21 @@
 import { chromium, type Browser, type Page } from "@playwright/test";
+import { promises as fs } from "fs";
+import path from "path";
 import { loadConfig, type SimConfig } from "@/simulation/config";
 import { extractState, type ScreenState } from "@/simulation/stateExtractor";
 import { executeAction, clickTransition } from "@/simulation/actionExecutor";
 import { MockAgent } from "@/simulation/agents/mockAgent";
 import { LlmAgent } from "@/simulation/agents/llmAgent";
+import { PersonaAgent } from "@/simulation/agents/personaAgent";
+import { loadPersona } from "@/simulation/persona";
 import type { LlmAction } from "@/lib/schema/llmAction";
+
+/** generic LlmAgent 와 uxagent PersonaAgent 의 공통 인터페이스. */
+interface SimAgent {
+  decide(state: ScreenState): Promise<LlmAction>;
+  modelName(): string;
+  exportTrace?: () => unknown;
+}
 
 /**
  * Playwright runner.
@@ -24,7 +35,20 @@ async function main() {
   console.log("[sim] config:", JSON.stringify(config)); // config 에는 키 값이 없다
 
   const useLlm = config.provider !== "mock";
-  const llm = useLlm ? new LlmAgent(config) : null;
+  let llm: SimAgent | null = null;
+  let personaId: string | null = null;
+  if (useLlm) {
+    if (config.agentArch === "uxagent") {
+      if (!config.personaId)
+        throw new Error("AGENT_ARCH=uxagent 에는 --persona-id=p01 같은 persona 지정이 필요합니다 (simulation/personas/).");
+      const persona = await loadPersona(config.personaId);
+      personaId = persona.id;
+      llm = new PersonaAgent(config, persona);
+      console.log(`[sim] uxagent persona: ${persona.id} (${persona.name}, ${persona.occupation})`);
+    } else {
+      llm = new LlmAgent(config);
+    }
+  }
   const mock = new MockAgent(config.scenarioId);
   const model = llm ? llm.modelName() : "mock";
 
@@ -142,9 +166,17 @@ async function main() {
       console.error("[sim] CLEAN RUN FAILED — 이 run 은 실험 데이터로 저장/인정하지 않는다. reason:", fallbackReason);
       // provenance POST 생략(clean 실패 run 보존 금지). logs 는 검증 단계에서 정리.
     } else {
-      await postProvenance(page, config, model, usedMockFallback, isCleanLlmRun, fallbackReason).catch(
-        (e) => console.warn("[sim] provenance post failed:", String(e).slice(0, 150))
-      );
+      const trace = llm && typeof llm.exportTrace === "function" ? llm.exportTrace() : null;
+      await postProvenance(
+        page,
+        config,
+        model,
+        usedMockFallback,
+        isCleanLlmRun,
+        fallbackReason,
+        personaId,
+        trace
+      ).catch((e) => console.warn("[sim] provenance post failed:", String(e).slice(0, 150)));
     }
 
     console.log(`[sim] done in ${steps} steps. logs saved under ./logs/`);
@@ -161,7 +193,9 @@ async function postProvenance(
   model: string,
   usedMockFallback: boolean,
   isCleanLlmRun: boolean,
-  fallbackReason: string | null
+  fallbackReason: string | null,
+  personaId: string | null,
+  trace: unknown
 ): Promise<void> {
   const data = (await page.evaluate(() => {
     const raw = localStorage.getItem("experiment_session");
@@ -180,10 +214,26 @@ async function postProvenance(
   };
 
   if (!data.session?.session_id) return;
+  const sid = data.session.session_id;
   const startedAt = data.session.started_at ?? 0;
   const lastTs = data.events.length
     ? Math.max(...data.events.map((e) => Number(e.timestamp) || 0))
     : startedAt;
+
+  // uxagent reasoning trace(think-aloud) 를 logs/trace_{sid}.json 으로 저장(정성 데이터).
+  if (trace) {
+    try {
+      await fs.mkdir(path.join(process.cwd(), "logs"), { recursive: true });
+      await fs.writeFile(
+        path.join(process.cwd(), "logs", `trace_${sid}.json`),
+        JSON.stringify(trace, null, 2),
+        "utf-8"
+      );
+      console.log(`[sim] reasoning trace saved: logs/trace_${sid}.json`);
+    } catch (e) {
+      console.warn("[sim] trace save failed:", String(e).slice(0, 120));
+    }
+  }
 
   const body = {
     session: data.session,
@@ -198,6 +248,8 @@ async function postProvenance(
     used_mock_fallback: usedMockFallback,
     is_clean_llm_run: isCleanLlmRun,
     fallback_reason: fallbackReason,
+    agent_arch: config.provider === "mock" ? null : config.agentArch,
+    persona_id: personaId,
   };
   const res = await fetch(`${config.baseUrl}/api/session`, {
     method: "POST",

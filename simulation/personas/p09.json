@@ -1,0 +1,13 @@
+{
+  "id": "p09",
+  "name": "강민수",
+  "age": 28,
+  "gender": "남성",
+  "occupation": "미디어 기획자",
+  "income_level": "high",
+  "tech_savviness": "high",
+  "patience": "medium",
+  "shopping_style": "리뷰와 스펙을 꼼꼼히 검토하는 세심한 소비자",
+  "priorities": "ANC 성능과 배터리 시간, 무게 중요함. 가격은 합리적이면 됨",
+  "bio": "최신 기술 트렌드에 민감하며 이어폰 선택 시에는 특별히 꼼꼼하다."
+}

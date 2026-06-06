@@ -169,6 +169,8 @@ def load_session(sid):
             "used_mock_fallback": _bool(data.get("used_mock_fallback")),
             "is_clean_llm_run": _bool(data.get("is_clean_llm_run")),
             "fallback_reason": data.get("fallback_reason"),
+            "agent_arch": data.get("agent_arch"),
+            "persona_id": data.get("persona_id"),
         }
     # 2) session csv (1행 요약)
     if "session_csv" in rec:
@@ -195,6 +197,8 @@ def load_session(sid):
                 "used_mock_fallback": _bool(r.get("used_mock_fallback")),
                 "is_clean_llm_run": _bool(r.get("is_clean_llm_run")),
                 "fallback_reason": r.get("fallback_reason") or None,
+                "agent_arch": r.get("agent_arch") or None,
+                "persona_id": r.get("persona_id") or None,
             }
     return None
 

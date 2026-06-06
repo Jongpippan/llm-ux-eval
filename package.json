@@ -11,7 +11,9 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "sim:mock": "tsx simulation/run.ts",
-    "sim:llm": "tsx simulation/run.ts"
+    "sim:llm": "tsx simulation/run.ts",
+    "sim:personas": "tsx simulation/generate-personas.ts",
+    "sim:uxagent": "AGENT_ARCH=uxagent tsx simulation/run.ts"
   },
   "dependencies": {
     "next": "14.2.15",

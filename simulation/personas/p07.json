@@ -1,0 +1,13 @@
+{
+  "id": "p07",
+  "name": "안병국",
+  "age": 42,
+  "gender": "남성",
+  "occupation": "프리랜서 개발자",
+  "income_level": "high",
+  "tech_savviness": "high",
+  "patience": "low",
+  "shopping_style": "기술 스펙을 우선시하며 신속하게 결정하는 고정관념형 소비자",
+  "priorities": "ANC와 무게를 중요하게 생각하고 브랜드에 대한 인지도도 중시함",
+  "bio": "실용적인 태도로 일상에서 훌륭한 기술을 활용한다."
+}

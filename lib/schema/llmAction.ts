@@ -6,7 +6,7 @@ import { z } from "zod";
  * actionExecutor가 type별로 data-testid 요소를 조작한다.
  */
 
-const surveyAnswerSchema = z.object({
+export const surveyAnswerSchema = z.object({
   difficulty: z.number().int().min(1).max(5),
   satisfaction: z.number().int().min(1).max(5),
   confidence: z.number().int().min(1).max(5),

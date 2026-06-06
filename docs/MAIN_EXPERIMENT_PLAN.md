@@ -19,15 +19,16 @@
 - **pilot ↔ 본실험 데이터 구분**: 현재 보유한 human pilot(A 재수집 `ef974b0e` + B `6c0730e3`)은 **각 조건 n=1 의 pilot** 으로 파이프라인·UX 점검 근거일 뿐 **본실험 데이터가 아니다**. 본실험은 단일 고정 빌드에서 새로 수집한 데이터만 사용한다.
 
 ## 3. LLM 조건 설계
-- **provider**: OpenAI 호환 엔드포인트(`OPENAI_BASE_URL`). 기본은 **Groq 무료 티어**(`https://api.groq.com/openai/v1`) 또는 Ollama 로컬.
-- **현재 검증 모델**: `llama-3.3-70b-versatile` (Groq). 본실험에서도 단일 모델을 고정해 사용한다.
-- **temperature**: `LLM_TEMPERATURE=0.2` 고정(재현성).
-- **pacing**: `LLM_CALL_DELAY_MS` — Groq 무료 티어는 **9000~12000ms** 권장(레이트리밋 회피).
-- **retry/backoff**: 429 발생 시 `LLM_MAX_RETRIES=3`, `LLM_RETRY_BASE_MS=5000` 으로 지수 백오프.
-- **clean run 기준**: 세션의 **모든 action 이 실제 LLM provider 에서 생성 + mock fallback 0** 일 때만 `is_clean_llm_run=true`, `used_mock_fallback=false`. 한 step 이라도 mock 이 섞이면 false. 기본 정책은 mock 자동 fallback 금지(실패 시 run 중단)이므로 오염 데이터가 애초에 생기지 않는다.
-- **1차 반복 횟수(확정)**: LLM A 5 / LLM B 5 (총 10). 권장 범위(조건당 약 10~20회)는 temperature>0 변동성 흡수 근거로 남기되, 1차는 Human 과 균형을 맞춰 조건당 5회로 확정한다.
-- **participant_id 규칙(1차 확정)**: `llm_A_001~llm_A_005` / `llm_B_001~llm_B_005` 형태로 조건·반복을 식별 가능하게 부여한다. `dev-<난수>` 자동 ID 금지.
-- **키 관리**: API 키는 `.env.local`(gitignore)에만 둔다. 채팅·커밋·로그에 노출 금지.
+- **agent 아키텍처**: 주 데이터는 **`uxagent`**(persona + Memory Stream + Reflection + Agent Interview 설문, UXAgent [1] 핵심 충실판). 함께 **`generic`**(상태→action 단일 호출) 을 baseline 으로 수집해 Human vs generic-LLM vs uxagent-LLM 3-way 로 대조한다. 상세: [docs/UXAGENT.md](UXAGENT.md).
+- **provider/모델**: OpenAI 호환 엔드포인트(`OPENAI_BASE_URL`). 본실험은 **로컬 Ollama** `qwen2.5:32b` 단일 모델로 고정 수집한다(quota 무관). `.env.local`: `OPENAI_BASE_URL=http://localhost:11434/v1`, `OPENAI_MODEL=qwen2.5:32b`, `OPENAI_API_KEY=ollama`.
+- **persona(uxagent)**: `simulation/generate-personas.ts` 로 **20명**을 1회 생성·저장(`simulation/personas/`, 레포 포함=재현). 1차는 **5/cell** 로 between 배정 — **A=p01~p05, B=p11~p15**(p06~p10·p16~p20 은 예비, 미사용). persona 는 상충 속성 가중·탐색 신중도·자기보고에만 영향을 주며 과업 하드조건·정보환경·측정은 공통 통제.
+- **temperature**: action 단계 `LLM_TEMPERATURE=0.2` 고정(변동은 persona 에서). persona 생성·인터뷰 단계만 다양성/자연성 위해 더 높게(코드 내 고정).
+- **retry/backoff**: 실패 시 `LLM_MAX_RETRIES`(기본3)·`LLM_RETRY_BASE_MS`(기본5000) 지수 백오프, `LLM_MAX_WAIT_MS`(기본120000) 초과 대기는 즉시 실패(hang 방지). 로컬 Ollama 는 rate-limit 이 없어 `LLM_CALL_DELAY_MS` pacing 불필요.
+- **clean run 기준**: 세션의 **모든 action 이 실제 LLM 에서 생성 + mock fallback 0** 일 때만 `is_clean_llm_run=true`. 한 step 이라도 mock 이 섞이면 false. 기본 정책은 mock 자동 fallback 금지(실패 시 run 중단)이라 오염 데이터가 애초에 생기지 않는다.
+- **1차 규모(확정)**: uxagent **A 5 / B 5**(persona p01–05·p11–15, between) + generic baseline **A 5 / B 5**. (당초 10/cell 에서 5/cell 로 축소 — human n=5 와 동일 N 맞춤 + 수집부하.)
+- **participant_id 규칙**: uxagent `llm_ux_A_001~005` / `llm_ux_B_001~005`, generic baseline `llm_A_001~005` / `llm_B_001~005`. `dev-<난수>` 자동 ID 금지.
+- **실제 수집 현황·결과 스냅샷**: [analysis/COLLECTION_STATUS.md](../analysis/COLLECTION_STATUS.md).
+- **키 관리**: 키/엔드포인트는 `.env.local`(gitignore)에만. 채팅·커밋·로그에 노출 금지.
 
 ## 4. 데이터 포함/제외 기준
 | 데이터 | 판별 | 본실험 |
@@ -65,17 +66,19 @@
 - **Human A vs Human B**: 비교 기능 유무에 따른 사용자 결과·행동 차이 관찰.
 - **LLM A vs LLM B**: 동일 자극에 대한 LLM 결과·행동 차이 관찰.
 - **A→B 차이의 "방향" 비교**: Human 의 A→B 변화 방향과 LLM 의 A→B 변화 방향이 같은 쪽을 향하는지 정렬성 관찰(RQ1·RQ2).
+- **generic vs uxagent 대조**: 집계는 `agent_arch` 로 분리(`sessions_grouped.csv`). persona·기억 기반(uxagent)이 generic baseline 보다 Human 정렬을 개선하는지 3-way(Human/generic/uxagent) 로 본다.
 - **(가능 시) 선택 결과·탐색 경로 유사도**: `final_selected_candidate_id` 일치도, 클릭 시퀀스 유사도(향후 events 파생 지표).
 - 구체적 지표·산식·집계 컬럼은 [analysis/ANALYSIS_PLAN.md](../analysis/ANALYSIS_PLAN.md) 에 위임한다.
 
 ## 7. 본실험 전 체크리스트
 - [ ] **단일 고정 빌드**에서만 수집(수집 중 코드버전 전환 금지 — pilot A 오염 재발 방지).
-- [ ] 1차 규모(Human A 5 / Human B 5 / LLM A 5 / LLM B 5, 총 20) 확정·배정표 반영.
-- [ ] `participant_id` 명시 입력(human `human_A_001…`, llm `llm_A_001…`), `dev-<난수>` 금지.
-- [ ] `analysis/input/{main,pilot,excluded}/` 폴더 구조로 수집·분리(분석 기본 scope=main).
+- [ ] 1차 규모(Human A 5 / B 5 + uxagent A 5 / B 5 + generic baseline A 5 / B 5) 확정·배정표 반영.
+- [ ] `participant_id` 명시 입력(human `human_A_001…`, uxagent `llm_ux_A_001…`, generic `llm_A_001…`), `dev-<난수>` 금지.
+- [ ] uxagent: persona 20명 1회 생성·`simulation/personas/` 고정, **A=p01~05 / B=p11~15** 배정(`--persona-id`, `AGENT_ARCH=uxagent`).
+- [ ] `analysis/input/{main,pilot,excluded}/` 폴더 구조로 수집·분리(분석 기본 scope=main). `agent_arch`(generic|uxagent)·`persona_id` 기록 확인.
 - [ ] `participant_type`(`human`|`llm`) / `ui_variant`(A|B) 명시.
-- [ ] `LLM_TEMPERATURE=0.2` 고정, 단일 모델(`llama-3.3-70b-versatile`) 고정.
-- [ ] Groq 무료 티어 한도·pacing 확인(`LLM_CALL_DELAY_MS` 9000~12000), 429 retry 설정 확인.
+- [ ] action `LLM_TEMPERATURE=0.2` 고정, 단일 모델(`qwen2.5:32b`, 로컬 Ollama) 고정.
+- [ ] Ollama 서버 기동(`http://localhost:11434`) + 모델 pull 확인. 로컬은 rate-limit 없음(pacing 불필요).
 - [ ] 완료 화면 `btn-finish` 클릭으로 **finish 로그 기록**(미완료 세션 제외).
 - [ ] `logs/` · `analysis/input/` 초기화(`.gitkeep` 만 잔존) 후 재수집.
 - [ ] A·B 배정표(participant_id ↔ ui_variant) 확정·logs 대조.

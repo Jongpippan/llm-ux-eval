@@ -44,6 +44,8 @@ const sessionResultSchema = z.object({
   used_mock_fallback: z.boolean().nullable().optional(),
   is_clean_llm_run: z.boolean().nullable().optional(),
   fallback_reason: z.string().nullable().optional(),
+  agent_arch: z.string().nullable().optional(),
+  persona_id: z.string().nullable().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -97,6 +99,8 @@ export async function POST(req: NextRequest) {
           used_mock_fallback: result.used_mock_fallback ?? null,
           is_clean_llm_run: result.is_clean_llm_run ?? null,
           fallback_reason: result.fallback_reason ?? null,
+          agent_arch: result.agent_arch ?? null,
+          persona_id: result.persona_id ?? null,
         },
       };
       await fs.writeFile(

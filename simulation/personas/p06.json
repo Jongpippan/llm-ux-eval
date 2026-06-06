@@ -1,0 +1,13 @@
+{
+  "id": "p06",
+  "name": "유은하",
+  "age": 49,
+  "gender": "여성",
+  "occupation": "회사직원",
+  "income_level": "middle",
+  "tech_savviness": "low",
+  "patience": "medium",
+  "shopping_style": "가격 대비 성능을 중히 여기는 실용주의자",
+  "priorities": "ANC와 배터리 시간이 중요하며 무게는 덜 중요함",
+  "bio": "평소에는 기술에 크게 약하지만 제품 사용 시 절묘한 균형감각을 보일 수 있다."
+}

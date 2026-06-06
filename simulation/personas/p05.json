@@ -1,0 +1,13 @@
+{
+  "id": "p05",
+  "name": "이동석",
+  "age": 21,
+  "gender": "남성",
+  "occupation": "서비스 업계 종업원",
+  "income_level": "low",
+  "tech_savviness": "medium",
+  "patience": "high",
+  "shopping_style": "가격 대비 성능을 중시하고 리뷰를 주로 참고함",
+  "priorities": "ANC와 가격이 매우 중요하다. 무게는 덜 중시함",
+  "bio": "영업 업무 때문인지 상품에 대해 비교적 세심하게 접근한다."
+}

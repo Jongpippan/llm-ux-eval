@@ -6,7 +6,7 @@
 
 ## 0. 전제 (사실)
 
-- 1차 본실험 규모: **Human 10세션**(A 5 + B 5), **clean LLM 10세션**(A 5 + B 5).
+- 1차 본실험 규모: **Human 10세션**(A 5 + B 5), **LLM uxagent 20세션**(A 10 + B 10, persona 20명 between), **LLM generic baseline 10세션**(A 5 + B 5). LLM 은 `agent_arch`(`uxagent`/`generic`)로 구분.
 - 본실험 데이터 위치
   - human: `analysis/input/main/human/`
   - llm: `analysis/input/main/llm/`
@@ -20,7 +20,9 @@
   - `python3 analysis/aggregate_events.py`
   - 산출물: `analysis/out/`
   - mock·fallback(`participant_type=llm` 이면서 `is_clean_llm_run != true`)은 집계에서 **자동 제외**된다.
-- provenance 필드: `llm_provider`, `llm_model`, `llm_temperature`, `used_mock_fallback`, `is_clean_llm_run`, `fallback_reason`.
+- provenance 필드: `llm_provider`, `llm_model`, `llm_temperature`, `used_mock_fallback`, `is_clean_llm_run`, `fallback_reason`, `agent_arch`, `persona_id`.
+
+> **규모 주석**: 아래 §1~§10 의 점검 수치(10/20 등)는 본래 1차 Human10+LLM10(20세션) 기준으로 작성되었다. uxagent 20 + generic 10 도입으로 LLM 총 30세션이 되었으니, LLM 수치는 **agent_arch 별로 분리해**(uxagent A10/B10, generic A5/B5) 점검한다. human 수치는 그대로.
 
 ---
 
@@ -86,6 +88,9 @@
 - [ ] 모든 llm 세션 `llm_temperature` 기록됨(재현성)
 - [ ] `fallback_reason` 이 비어있음(또는 fallback 미발생 표시) — 값이 있으면 clean 여부 재확인
 - [ ] llm 세션 간 `llm_model` / `llm_temperature` 가 비교 전제에 맞게 일관됨
+- [ ] **`agent_arch`** 기록됨 — uxagent run=`uxagent`, baseline=`generic` (분석에서 분리 집계)
+- [ ] uxagent 세션은 **`persona_id`** 기록됨, generic 세션은 비어 있음
+- [ ] uxagent A10/B10 의 persona_id 가 배정표(p01~p10→A, p11~p20→B)와 일치, 중복 없음
 
 ## 8. B 조건 compare action 여부 확인 (기록만 — 자동 실패 처리 금지)
 

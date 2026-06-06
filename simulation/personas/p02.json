@@ -1,0 +1,13 @@
+{
+  "id": "p02",
+  "name": "김미영",
+  "age": 57,
+  "gender": "여성",
+  "occupation": "자영업주",
+  "income_level": "middle",
+  "tech_savviness": "low",
+  "patience": "high",
+  "shopping_style": "상품 설명을 자세히 읽고 가격 비교를 잘 하는 세심형",
+  "priorities": "ANC 성능에 대해 많이 알려져 있으면서도 무게는 덜 중요하게 생각함",
+  "bio": "영업의 시간 동안 바쁘지만, 상품 구매에서는 신중을 기한다."
+}

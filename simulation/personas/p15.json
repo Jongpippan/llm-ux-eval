@@ -1,0 +1,13 @@
+{
+  "id": "p15",
+  "name": "이강우",
+  "age": 30,
+  "gender": "남성",
+  "occupation": "서비스 업계 종업원",
+  "income_level": "low",
+  "tech_savviness": "medium",
+  "patience": "high",
+  "shopping_style": "가격 대비 성능을 중히 여기는 실용적 소비자",
+  "priorities": "ANC와 배터리 시간 중요함. 무게는 상대적으로 덜 중시함.",
+  "bio": "서비스 업계에서 일하다 보니 이어폰 사용이 자주 필요하다."
+}

@@ -42,6 +42,8 @@ export function buildSessionExport(input: SessionExportInput): SessionExport {
     used_mock_fallback: input.llm?.used_mock_fallback ?? null,
     is_clean_llm_run: input.llm?.is_clean_llm_run ?? null,
     fallback_reason: input.llm?.fallback_reason ?? null,
+    agent_arch: input.llm?.agent_arch ?? null,
+    persona_id: input.llm?.persona_id ?? null,
     events: input.events,
   };
 }
@@ -139,6 +141,8 @@ export const SESSION_SUMMARY_CSV_COLUMNS = [
   "used_mock_fallback",
   "is_clean_llm_run",
   "fallback_reason",
+  "agent_arch",
+  "persona_id",
 ] as const;
 
 /** 세션 1행 요약 CSV (header + 1 row). */
@@ -167,6 +171,8 @@ export function buildSessionSummaryCsv(input: SessionExportInput): string {
     m?.used_mock_fallback ?? "",
     m?.is_clean_llm_run ?? "",
     m?.fallback_reason ?? "",
+    m?.agent_arch ?? "",
+    m?.persona_id ?? "",
   ]);
   return header + "\n" + row;
 }

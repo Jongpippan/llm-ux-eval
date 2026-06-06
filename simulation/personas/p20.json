@@ -1,0 +1,13 @@
+{
+  "id": "p20",
+  "name": "이지은",
+  "age": 34,
+  "gender": "여성",
+  "occupation": "IT 컨설턴트",
+  "income_level": "high",
+  "tech_savviness": "high",
+  "patience": "medium",
+  "shopping_style": "기술 스펙과 리뷰를 꼼꼼히 검토하는 세심한 소비자",
+  "priorities": "ANC 성능, 무게, 배터리 시간 중요함. 가격은 합리적이어야 함.",
+  "bio": "IT 컨설턴트로서 이어폰을 포함한 기술 제품 선택 시에는 철저히 검토한다."
+}

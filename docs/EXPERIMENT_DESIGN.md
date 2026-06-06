@@ -15,7 +15,13 @@
 
 ## 3. 참가자/데이터 유형 구분
 - `participant_type` = `human` | `llm`. **주의:** 시뮬레이션(mock·real)은 둘 다 `participant_type=llm` 으로 기록된다(sim 이 `participant=llm` 로 진입). 따라서 **mock 과 real LLM 의 구분은 `participant_type` 이 아니라 provenance 필드로 한다.**
-- **provenance(LLM run 출처)**: `llm_provider`, `llm_model`, `llm_temperature`, `used_mock_fallback`, `is_clean_llm_run`, `fallback_reason` (session json/csv·export 에 기록).
+- **provenance(LLM run 출처)**: `llm_provider`, `llm_model`, `llm_temperature`, `used_mock_fallback`, `is_clean_llm_run`, `fallback_reason`, `agent_arch`, `persona_id` (session json/csv·export 에 기록).
+
+#### LLM agent 아키텍처 (`agent_arch`)
+LLM 시뮬레이션은 두 아키텍처로 수집·구분한다(분석에서 별도 그룹). 상세는 [docs/UXAGENT.md](UXAGENT.md).
+- **`uxagent`** (주 데이터): persona + Memory Stream + Reflection + Agent Interview(설문). UXAgent [1] 핵심 충실판. 변동은 **persona 다양성**에서 발생. persona 는 상충 속성 가중·탐색 신중도·자기보고에만 영향을 주며, 과업 하드조건(ANC·예산)·정보 노출·측정은 공통 통제.
+- **`generic`** (baseline): 상태→action 단일 호출 반복(persona·기억 없음). Human vs generic-LLM vs uxagent-LLM 3-way 대조용.
+- `persona_id` 는 uxagent run 이 사용한 persona(`simulation/personas/`)를 식별. generic/human/mock 은 비어 있음.
 
 #### 식별성(participant_id)
 - 본실험·시뮬레이션 모두 **`participant_id` 명시 입력을 권장**한다 — human 은 intro 화면에서 입력, LLM 은 `--participant-id` 로 지정. `dev-<난수>` 자동 ID 는 pilot/개발용으로만 사용한다.

@@ -2,26 +2,27 @@
 
 실제 LLM 기반 A/B smoke test 절차 문서. 시뮬레이션은 Playwright 로 웹을 구동하며, LLM provider 는 env 기반으로 설정된다.
 
-> **무료로 real LLM 가능:** **Groq 무료 티어**(결제수단 불필요)를 OpenAI 호환 엔드포인트로 붙여 실제 LLM(예: `llama-3.3-70b-versatile`)으로 A/B smoke 가 동작함을 확인했다. 로컬 무료 대안은 **Ollama**(`OPENAI_BASE_URL=http://localhost:11434/v1`).
+> **본수집은 로컬 Ollama 기준:** 본 연구는 **로컬 Ollama `qwen2.5:32b`**(`OPENAI_BASE_URL=http://localhost:11434/v1`, quota 무관)로 수집한다. agent 아키텍처(uxagent/generic)는 [docs/UXAGENT.md](./UXAGENT.md) 참고. (Groq 등 호스티드 OpenAI 호환 백엔드도 동일 방식으로 동작하나 무료 티어 rate-limit 으로 본수집엔 부적합 — 아래 pacing 은 호스티드 사용 시 참고용.)
 
 ## Provider 동작 규칙 (`simulation/config.ts`, `simulation/agents/llmAgent.ts`)
 
 - `LLM_PROVIDER` ∈ `anthropic | openai | mock`. unset/blank → `mock`.
 - key 자동 감지: `LLM_PROVIDER` 미지정 시 `ANTHROPIC_API_KEY` 있으면 `anthropic`, `OPENAI_API_KEY` 있으면 `openai`, 둘 다 없으면 `mock`.
-- model: `ANTHROPIC_MODEL` (기본 `claude-3-5-sonnet-latest`) / `OPENAI_MODEL` (기본 `gpt-4o-mini`).
+- model: `OPENAI_MODEL` (본 연구 `qwen2.5:32b`, 기본 `gpt-4o-mini`) / `ANTHROPIC_MODEL`(anthropic 사용 시 env 로 지정).
 - **OpenAI 호환 백엔드**: `OPENAI_BASE_URL` 로 엔드포인트 변경(미지정 시 공식 OpenAI). Groq = `https://api.groq.com/openai/v1`, Ollama = `http://localhost:11434/v1`, OpenRouter = `https://openrouter.ai/api/v1`.
 - **mock 자동 fallback 안 함(중요)**: clean run 수집을 위해 `sim:llm` 은 LLM 실패 시 mock 으로 자동 대체하지 않는다. 실패하면 retry/backoff 후 run 을 중단(clean 실패)한다. 개발용으로 섞으려면 `LLM_ALLOW_MOCK_FALLBACK=true`(그 run 은 자동으로 `is_clean_llm_run=false`).
 
-## Groq 무료 티어 사용 (`.env.local`, 키는 채팅/커밋 금지)
+## 로컬 Ollama 사용 (`.env.local`, 키는 채팅/커밋 금지)
 
 ```
 LLM_PROVIDER=openai
-OPENAI_API_KEY=gsk_...                         # https://console.groq.com 무료 발급
-OPENAI_BASE_URL=https://api.groq.com/openai/v1
-OPENAI_MODEL=llama-3.3-70b-versatile           # 사용 가능 모델은 변동될 수 있음
+OPENAI_API_KEY=ollama                          # Ollama 는 키를 무시(아무 값)
+OPENAI_BASE_URL=http://localhost:11434/v1
+OPENAI_MODEL=qwen2.5:32b
 ```
 - `.env.local` 은 gitignore. `tsx` 가 자동 로드하지 않으므로 실행 시 `set -a; . ./.env.local; set +a` 로 주입한다.
-- **무료 TPM 한도(예: 12,000 tokens/분)** 가 있어 호출이 잦으면 429 발생. 아래 retry/backoff + pacing 으로 대응한다(상세 비용·한도 논의는 운영 노트 참고).
+- Ollama 서버 기동 + `qwen2.5:32b` pull 확인(`curl -s localhost:11434/api/tags`). 로컬은 rate-limit 이 없어 pacing/TPM 걱정 불필요.
+- (호스티드 백엔드 예: Groq `https://api.groq.com/openai/v1` — 무료 TPM 한도가 있어 429 발생 시 아래 retry/backoff + `LLM_CALL_DELAY_MS` pacing 으로 대응.)
 
 ## 429 retry/backoff + 호출 페이싱
 

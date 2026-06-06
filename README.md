@@ -27,7 +27,8 @@ lib/            types, candidates, logger, session, schema/(zod), testids
 data/           candidates.json (더미 후보)
 logs/           runtime 세션/이벤트 JSON·CSV·export 저장 (mock 등, gitignore, 분석 제외)
 pilot/          사용자가 수행한 human pilot export 원본 (보존)
-simulation/     Playwright runner + state/action + mock/llm agent
+simulation/     Playwright runner + state/action + agents(mock/generic llm/persona uxagent) + persona/memory/interview
+                personas/   생성된 가상 사용자 persona (uxagent 용, 재현 위해 레포 포함)
 analysis/       로그 → 집계 CSV 스크립트, input/, PILOT_QC_REPORT.md, ANALYSIS_PLAN.md
                 input/main/{human,llm}/     본실험 데이터
                 input/pilot/{human,llm}/    pilot 데이터(분리)
@@ -46,14 +47,14 @@ docs/           EXPERIMENT(실행)·EXPERIMENT_DESIGN(설계)·TESTID·HUMAN_PIL
 - 절차·주의는 [docs/HUMAN_MAIN_RUN_CHECKLIST.md](docs/HUMAN_MAIN_RUN_CHECKLIST.md) / [docs/HUMAN_PILOT_CHECKLIST.md](docs/HUMAN_PILOT_CHECKLIST.md), 검수 결과는 [analysis/PILOT_QC_REPORT.md](analysis/PILOT_QC_REPORT.md).
 
 ## 1차 본실험 규모·실행
-- 규모: Human A 5 / Human B 5 / LLM A 5 / LLM B 5 (총 20). 셀 배정은 [docs/MAIN_EXPERIMENT_ASSIGNMENT.md](docs/MAIN_EXPERIMENT_ASSIGNMENT.md).
+- 규모(1차 확정): **Human A 5 / B 5** + **LLM(uxagent) A 5 / B 5**(persona p01–05→A, p11–15→B; between) + **LLM(generic) A 5 / B 5** baseline = 총 30세션. 실제 수집 현황·결과는 [analysis/COLLECTION_STATUS.md](analysis/COLLECTION_STATUS.md), 배정은 [docs/MAIN_EXPERIMENT_ASSIGNMENT.md](docs/MAIN_EXPERIMENT_ASSIGNMENT.md).
 - human 실행 링크: `http://localhost:3000/?variant=A&participant=human&pid=human_A_001` (쿼리 파라미터 `variant`/`participant`/`pid`).
-- LLM 실행 (`.env.local` 주입 + 페이싱):
+- LLM(uxagent) 실행 (`.env.local` 주입 후, persona 1명당 1 run):
   ```bash
   set -a; . ./.env.local; set +a
-  LLM_CALL_DELAY_MS=9000 LLM_MAX_RETRIES=4 npx tsx simulation/run.ts --variant=A --participant-id=llm_A_001 --headless=true
+  AGENT_ARCH=uxagent npx tsx simulation/run.ts --variant=A --persona-id=p01 --participant-id=llm_ux_A_001 --headless=true
   ```
-- 본실험 전 마지막 확인(단일 빌드 / 명시 pid / temperature 고정 / finish / Groq 페이싱): [docs/MAIN_DATA_QC_CHECKLIST.md](docs/MAIN_DATA_QC_CHECKLIST.md).
+- 본실험 전 마지막 확인(단일 빌드 / 명시 pid / temperature 고정 / finish / agent_arch·persona_id): [docs/MAIN_DATA_QC_CHECKLIST.md](docs/MAIN_DATA_QC_CHECKLIST.md).
 
 ## 스크립트
 | 명령 | 설명 |
@@ -62,47 +63,53 @@ docs/           EXPERIMENT(실행)·EXPERIMENT_DESIGN(설계)·TESTID·HUMAN_PIL
 | `npm run build` | 프로덕션 빌드 (타입체크 포함) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run sim:mock -- --variant=A` | mock 시뮬레이션(키 불필요, 흐름 검증용) |
-| `npm run sim:llm -- --variant=B` | real LLM 시뮬레이션(키 필요; **기본은 mock 자동 fallback 안 함** — 아래 참고) |
+| `npm run sim:llm -- --variant=B` | **generic** real LLM 시뮬레이션(baseline; 상태→action 단일 호출). **기본은 mock 자동 fallback 안 함** |
+| `npm run sim:personas -- --count=20` | **Persona Generator** — 다양한 가상 사용자 persona 생성·저장(`simulation/personas/`) |
+| `npm run sim:uxagent -- --variant=A --persona-id=p01` | **uxagent** 시뮬레이션(persona+기억+반성+인터뷰 설문) — [docs/UXAGENT.md](docs/UXAGENT.md) |
 | `python3 analysis/aggregate_sessions.py` | 세션 집계 CSV 생성 (기본 `analysis/input/main/`, A/B·human/llm 그룹; `ANALYSIS_SCOPE=pilot`/`all` 로 범위 변경) |
 | `python3 analysis/aggregate_events.py` | 이벤트 집계 CSV 생성 (event_type 분포, B compare 사용 등) |
 
 > 분석 산출물은 `analysis/out/` 에 생성됩니다(gitignore). 데이터가 없으면 에러 없이 "로그 없음" 안내 후 종료합니다.
 
-## real LLM 시뮬레이션 (무료 Groq 예시)
-OpenAI 호환 백엔드를 `OPENAI_BASE_URL` 로 붙입니다. **Groq 무료 티어**(결제 불필요)로 동작 확인됨. 로컬 무료 대안은 **Ollama**(`OPENAI_BASE_URL=http://localhost:11434/v1`).
+## real LLM 시뮬레이션 (로컬 Ollama 기준)
+OpenAI 호환 백엔드를 `OPENAI_BASE_URL` 로 붙입니다. 본 연구는 **로컬 Ollama**(quota 무관)에서 `qwen2.5:32b` 로 수집합니다. (Groq 등 호스티드 OpenAI 호환 백엔드도 동일 방식으로 가능하나 무료 티어는 rate-limit 으로 본수집에 부적합.)
 
 `.env.local` (gitignore, 키는 채팅/커밋 금지):
 ```
 LLM_PROVIDER=openai
-OPENAI_API_KEY=gsk_...                          # console.groq.com 무료 발급
-OPENAI_BASE_URL=https://api.groq.com/openai/v1
-OPENAI_MODEL=llama-3.3-70b-versatile
-LLM_TEMPERATURE=0.2                             # 기본 0.2, 재현성 위해 낮게
+OPENAI_API_KEY=ollama                           # Ollama 는 키를 무시(아무 값)
+OPENAI_BASE_URL=http://localhost:11434/v1
+OPENAI_MODEL=qwen2.5:32b
+LLM_TEMPERATURE=0.2                             # action 단계 기본 0.2, 재현성 위해 낮게
 ```
-clean LLM smoke test (서버 기동 후, `.env.local` 주입 + 페이싱):
+uxagent 수집 (서버 기동 후, persona 생성 → persona 1명당 1 run):
 ```bash
-npx next build && npx next start -p 3000 &      # 서버
+npx next build && npx next start -p 3000 &      # 서버(API 라우트 포함; static export 아님)
 set -a; . ./.env.local; set +a
-LLM_TEMPERATURE=0.2 LLM_CALL_DELAY_MS=9000 LLM_MAX_RETRIES=4 npx tsx simulation/run.ts --variant=A --participant-id=llm_A_001 --headless=true
-LLM_TEMPERATURE=0.2 LLM_CALL_DELAY_MS=9000 LLM_MAX_RETRIES=4 npx tsx simulation/run.ts --variant=B --participant-id=llm_B_001 --headless=true
+npx tsx simulation/generate-personas.ts --count=20            # 1회: persona 20명 생성
+AGENT_ARCH=uxagent npx tsx simulation/run.ts --variant=A --persona-id=p01 --participant-id=llm_ux_A_001 --headless=true
+AGENT_ARCH=uxagent npx tsx simulation/run.ts --variant=B --persona-id=p11 --participant-id=llm_ux_B_001 --headless=true
 ```
-- **mock fallback 주의**: `sim:llm` 은 기본적으로 LLM 실패 시 mock 으로 섞지 않고 run 을 중단한다(clean run 보존). 개발용으로만 `LLM_ALLOW_MOCK_FALLBACK=true`.
+generic baseline 은 `--persona-id` 없이(기본 `AGENT_ARCH=generic`): `npx tsx simulation/run.ts --variant=A --participant-id=llm_A_001 --headless=true`.
+- **agent_arch**: `generic`(baseline, 단일 호출) | `uxagent`(persona+기억+반성+인터뷰). provenance·분석에서 분리 집계 — [docs/UXAGENT.md](docs/UXAGENT.md).
+- **mock fallback 주의**: 기본적으로 LLM 실패 시 mock 으로 섞지 않고 run 을 중단한다(clean run 보존). 개발용으로만 `LLM_ALLOW_MOCK_FALLBACK=true`.
 - **clean LLM run 기준**: 모든 action 이 실제 LLM 에서 나오고 mock fallback 이 0 이면 `is_clean_llm_run=true`. 한 step 이라도 mock 이 섞이면 `is_clean_llm_run=false` 로 기록되어 분석에서 제외된다.
-- **Groq 무료 티어 pacing 권장**: 무료 **TPM 한도**로 429 가 나면 `LLM_CALL_DELAY_MS=9000~12000` 으로 크게 잡아 회피한다.
-- **temperature**: `LLM_TEMPERATURE`(기본 `0.2`, 재현성 위해 낮게)로 지정하며 session summary / export 에 `llm_temperature` 로 기록된다.
+- **temperature**: action 단계는 `LLM_TEMPERATURE`(기본 `0.2`)로 낮게 고정(변동은 persona 에서). persona 생성·인터뷰 단계만 다양성/자연성 위해 더 높게(코드 내 고정). session summary / export 에 `llm_temperature` 기록.
+- **reasoning trace**: uxagent run 은 think-aloud 격 memory 를 `logs/trace_{sid}.json` 으로 저장(정성 데이터).
 - **pilot vs 본실험**: pilot 은 절차·도구 검증용, 본실험은 분석 대상 데이터 수집용으로 구분하며 mock/fallback 섞인 run 은 분석에서 제외한다 — [docs/EXPERIMENT_DESIGN.md](docs/EXPERIMENT_DESIGN.md).
-- env: `LLM_TEMPERATURE`(기본0.2), `LLM_MAX_RETRIES`(기본3), `LLM_RETRY_BASE_MS`(기본5000), `LLM_CALL_DELAY_MS`(기본0), `LLM_ALLOW_MOCK_FALLBACK`(기본false). 상세: [docs/LLM_PILOT_CHECKLIST.md](docs/LLM_PILOT_CHECKLIST.md).
+- env: `AGENT_ARCH`(generic|uxagent), `REFLECT_EVERY`(기본4), `LLM_TEMPERATURE`(기본0.2), `LLM_MAX_RETRIES`(기본3), `LLM_RETRY_BASE_MS`(기본5000), `LLM_MAX_WAIT_MS`(기본120000), `LLM_CALL_DELAY_MS`(기본0), `LLM_ALLOW_MOCK_FALLBACK`(기본false). 상세: [docs/LLM_PILOT_CHECKLIST.md](docs/LLM_PILOT_CHECKLIST.md).
 
 ## 문서
 | 문서 | 내용 |
 |------|------|
 | [docs/EXPERIMENT.md](docs/EXPERIMENT.md) | 실행·시뮬레이션·로그/export 절차 |
 | [docs/EXPERIMENT_DESIGN.md](docs/EXPERIMENT_DESIGN.md) | 설계 원칙, A/B 통제, human/llm/mock·pilot/본실험 데이터 구분 |
+| [docs/UXAGENT.md](docs/UXAGENT.md) | **LLM agent 아키텍처** — persona+기억+반성+인터뷰(uxagent) ↔ generic baseline, UXAgent[1] 매핑·단순화 |
 | [docs/MAIN_EXPERIMENT_PLAN.md](docs/MAIN_EXPERIMENT_PLAN.md) | 본실험 실행 계획 |
 | [docs/MAIN_EXPERIMENT_ASSIGNMENT.md](docs/MAIN_EXPERIMENT_ASSIGNMENT.md) | 1차 본실험 셀 배정 (Human/LLM × A/B, 각 5) |
 | [docs/HUMAN_MAIN_RUN_CHECKLIST.md](docs/HUMAN_MAIN_RUN_CHECKLIST.md) | 본실험 human run 수행·수집 절차 |
 | [docs/LLM_MAIN_RUN_CHECKLIST.md](docs/LLM_MAIN_RUN_CHECKLIST.md) | 본실험 LLM run 수행·수집 절차 |
-| [docs/MAIN_DATA_QC_CHECKLIST.md](docs/MAIN_DATA_QC_CHECKLIST.md) | 본실험 전 마지막 확인 (단일 빌드·명시 pid·temperature·finish·Groq 페이싱) |
+| [docs/MAIN_DATA_QC_CHECKLIST.md](docs/MAIN_DATA_QC_CHECKLIST.md) | 본실험 전 마지막 확인 (단일 빌드·명시 pid·temperature·finish·agent_arch·persona_id) |
 | [docs/DEPLOY_GH_PAGES.md](docs/DEPLOY_GH_PAGES.md) | **다른 기기/원격 human 수집** — GitHub Pages 정적 배포 + export.json 제출 |
 | [docs/HUMAN_PILOT_CHECKLIST.md](docs/HUMAN_PILOT_CHECKLIST.md) | 추가 human pilot 수행·수집 절차 |
 | [docs/LLM_PILOT_CHECKLIST.md](docs/LLM_PILOT_CHECKLIST.md) | real LLM A/B smoke test 절차, mock/real 구분 |

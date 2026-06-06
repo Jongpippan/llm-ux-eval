@@ -1,4 +1,5 @@
 import type { Page } from "@playwright/test";
+import { getCandidates, getAttributeLabels, DISPLAY_ATTRIBUTES } from "@/lib/candidates";
 
 /** 현재 화면 상태를 JSON으로 추출해 agent에 전달. */
 export interface ScreenState {
@@ -6,7 +7,18 @@ export interface ScreenState {
   step: "intro" | "experiment" | "explore" | "survey" | "complete" | "unknown";
   variant: "A" | "B";
   scenarioText: string | null;
-  candidates: Array<{ id: string; name: string; visible: boolean }>;
+  /**
+   * 화면의 후보 카드. human 이 카드에서 보는 것과 **동일한 전체 속성**을 함께 제공해
+   * LLM 도 14개 후보의 trade-off 를 동일 정보로 따질 수 있게 한다(동일 정보 환경 — 공정성).
+   * attributes 의 키/라벨은 카드/비교표와 같은 DISPLAY_ATTRIBUTES.
+   */
+  candidates: Array<{
+    id: string;
+    name: string;
+    brand: string;
+    visible: boolean;
+    attributes: Record<string, unknown>;
+  }>;
   finalSelectedId: string | null;
   compareTrayIds: string[];
   /**
@@ -68,7 +80,14 @@ export async function extractState(
     )
     .catch(() => [] as string[]);
 
-  const candidates = cardIds.map((id) => ({ id, name: id, visible: true }));
+  // 화면에 보이는 카드 id 에, human 이 카드에서 보는 전체 속성을 결합(동일 정보 환경).
+  const byId = new Map(getCandidates().map((c) => [c.id, c]));
+  const candidates = cardIds.map((id) => {
+    const c = byId.get(id);
+    const attributes: Record<string, unknown> = {};
+    if (c) for (const k of DISPLAY_ATTRIBUTES) attributes[k] = (c as unknown as Record<string, unknown>)[k];
+    return { id, name: c?.name ?? id, brand: c?.brand ?? "", visible: true, attributes };
+  });
 
   const finalBannerVisible = await page
     .getByTestId("selected-final-banner")

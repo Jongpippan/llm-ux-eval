@@ -1,0 +1,13 @@
+{
+  "id": "p12",
+  "name": "정지윤",
+  "age": 60,
+  "gender": "여성",
+  "occupation": "무직(은퇴)",
+  "income_level": "middle",
+  "tech_savviness": "low",
+  "patience": "high",
+  "shopping_style": "다양한 정보를 충분히 검토해 신중하게 결정하는 소비자",
+  "priorities": "ANC 성능과 가격 대비 성능 중요함. 무게는 상대적으로 덜 중시함.",
+  "bio": "은퇴 후에도 생활에 필요한 제품 선택 시 세심하다."
+}

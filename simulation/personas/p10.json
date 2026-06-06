@@ -1,0 +1,13 @@
+{
+  "id": "p10",
+  "name": "조하나",
+  "age": 56,
+  "gender": "여성",
+  "occupation": "회사 직원(퇴역)",
+  "income_level": "middle",
+  "tech_savviness": "medium",
+  "patience": "high",
+  "shopping_style": "가격대비 성능을 중시하며 신중한 접근하는 실용적 소프트웨어 사용자",
+  "priorities": "ANC의 기술과 배터리 시간 중요함. 가격은 합리적이어야 함.",
+  "bio": "퇴역 직원으로서 이어폰과 같이 일상적인 제품 선택에 있어 특별히 세심하다."
+}
